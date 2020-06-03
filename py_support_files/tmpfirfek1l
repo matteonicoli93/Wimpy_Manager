@@ -1,0 +1,284 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 22 13:14:30 2020
+
+@author: matteo
+"""
+import os
+import csv
+import datetime
+import pandas as pd
+
+
+
+
+
+
+
+
+
+
+
+def datatime2str_csv(date):
+    AOSyys = str(date.year)
+    mm = date.month
+    if (mm<10):
+        AOSmms = '0'+str(mm)
+    else:
+        AOSmms = str(mm)
+    dd = date.day
+    if (dd<10):
+        AOSdds = '0'+str(dd)
+    else:
+        AOSdds = str(dd)
+    hh = date.hour
+    if (hh<10):
+        AOShhs = '0'+str(hh)
+    else:
+        AOShhs = str(hh)
+    MM = date.minute
+    if (MM<10):
+        AOSMMs = '0'+str(MM)
+    else:
+        AOSMMs = str(MM)
+    ss = date.second
+    if (ss<10):
+        AOSsss = '0'+str(ss)
+    else:
+        AOSsss = str(ss)
+    datastr=AOSyys+'-'+AOSmms+'-'+AOSdds+'T'+AOShhs+':'+AOSMMs+':'+AOSsss+'Z'
+    return datastr
+
+
+
+
+
+
+
+
+
+
+
+def fcn_MPF_events_csv(FDF_Pass_M, DS, DE, lastAz, SpaGrndCon, opts):
+    lastAzstr=str(lastAz)
+    AOSLOS=[]
+    menemonic=[]
+    for wrow in range(0,FDF_Pass_M.shape[0]):
+        AOS=FDF_Pass_M.loc[wrow,['CDA_AOS']]['CDA_AOS']
+        LOS=FDF_Pass_M.loc[wrow,['CDA_LOS']]['CDA_LOS']
+        Metop = FDF_Pass_M.loc[wrow,['M01']]['M01']
+        nOrbit = str(FDF_Pass_M.loc[wrow,['CDA_nOrbit']]['CDA_nOrbit'])
+        CDAn = str(FDF_Pass_M.loc[wrow,['CDAn']]['CDAn'])
+        
+        if ( Metop == 19 or Metop == 18 ):
+            if (SpaGrndCon==1 or SpaGrndCon==3):
+                NOAA_BOS = FDF_Pass_M.loc[wrow,['NOAA_BOS']]['NOAA_BOS']
+                if (NOAA_BOS == 'YES'):
+                    AOSlineText='AOS '+CDAn+'/TTC1     Az/ACU: 000.000°/'+nextAzstr+'°/2LT       TM:  OK      TC: OK     XBAND: OK'
+                    MtOp=str(Metop)
+                    AOSline='N'+MtOp+',Pass Orbit '+nOrbit+','+AOSlineText
+                    
+                    GAC_type = FDF_Pass_M.loc[wrow,['GDS_GAC']]['GDS_GAC'][0:2]
+                    GAC_Frame = FDF_Pass_M.loc[wrow,['GDS_GAC']]['GDS_GAC'][3:10]
+                    LOSlineText='LOS     GAC: /'+GAC_Frame+' ('+GAC_type+') Frames'
+                    LOSline='M'+MtOp+',Pass Orbit '+nOrbit+','+LOSlineText
+                    AOSLOS.append(AOS)
+                    AOSLOS.append(LOS)
+                    menemonic.append(AOSline)
+                    menemonic.append(LOSline)
+        else:
+            AOSM=FDF_Pass_M.loc[wrow,['CDA_AOSM']]['CDA_AOSM']
+            RPF=AOSM+datetime.timedelta(minutes=5)
+            MtOp='0'+str(Metop)
+            
+            #if (SpaGrndCon==1 or SpaGrndCon==2):
+            AOSlineText='AOS '+CDAn+'/TTC1     TM:  OK      TC: OK     XBAND: OK'
+            
+            AOSline='M'+MtOp+',Pass Orbit '+nOrbit+','+AOSlineText
+            
+            #
+            DEFPass = FDF_Pass_M.loc[wrow,['TM_Format']]['TM_Format']
+            if (DEFPass=='DEF_PLM'):
+                RPFsline='M'+MtOp+',Pass Orbit '+nOrbit+",All RPF's received and reset"
+            elif (DEFPass=='DEF_ROUT'):
+                RPFsline='M'+MtOp+',Pass Orbit '+nOrbit+",SVM and TEXTR received and reset"
+            
+            #    
+            if (wrow==FDF_Pass_M.shape[0]-1):
+                nextAz=lastAz
+            else:
+                nextAz=FDF_Pass_M.loc[wrow+1,['CDA_AOS_Azi']]['CDA_AOS_Azi']
+            nextAzstr=str(nextAz)
+            if (nextAz>=360-100):
+                nextAzstr=str(nextAz-360)
+            
+            RD=FDF_Pass_M.loc[wrow,['RNGDOP']]['RNGDOP']
+            if (SpaGrndCon==1):
+                if ( opts >= 2 ):
+                    LOSlineText='LOS     Az/ACU: 000.000°/'+nextAzstr+'°/2LT       TC Count:        R/D: '+str(RD)+'/'+str(RD)
+                else:
+                    LOSlineText='LOS     Az/ACU: 000.000/'+nextAzstr+'/2LT       TC Count:        R/D: '+str(RD)+'/'+str(RD)
+            elif (SpaGrndCon==2):
+                LOSlineText='LOS        TC Count:        R/D: '+str(RD)+'/'+str(RD)
+            elif (SpaGrndCon==3):
+                if ( opts >= 2 ):
+                    LOSlineText='LOS     Az/ACU: 000.000°/'+nextAzstr+'°/2LT'
+                else:
+                    LOSlineText='LOS     Az/ACU: 000.000/'+nextAzstr+'/2LT'
+            LOSline='M'+MtOp+',Pass Orbit '+nOrbit+','+LOSlineText
+            
+            AOSLOS.append(AOS)
+            if (SpaGrndCon==1 or SpaGrndCon==2):
+                AOSLOS.append(RPF)
+            AOSLOS.append(LOS)
+            menemonic.append(AOSline)
+            if (SpaGrndCon==1 or SpaGrndCon==2):
+                menemonic.append(RPFsline)
+            menemonic.append(LOSline)
+    flag_DE=0
+    iminute=0
+    iAOSLOS=0
+    Date_vet=[]
+    menemonic_vet=[]
+    while (flag_DE==0):
+        iDate=DS+datetime.timedelta(minutes=iminute)
+        if ( opts >= 3 ):
+            if (iDate.weekday()==1-1 and iDate.hour==5 and iDate.minute==30):
+                Date_vet.append(iDate)
+                menemonic_vet.append(',,RNG/DOP Calibration')
+            if (iDate.weekday()==5-1 and iDate.hour==6 and iDate.minute==30 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,Weekly UNS check')
+            if (iDate.hour==7 and iDate.minute==50 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,OBT to UTC Check')
+            if (iDate.hour==7 and iDate.minute==50 ):
+                if (SpaGrndCon==1 or SpaGrndCon==3):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,PGF Aux file Check')
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,CDA short period pointing file Check')
+            if (iDate.weekday()==5-1 and iDate.hour==8 and iDate.minute==10 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,Delay MMAMs')
+            if (iDate.hour==8 and iDate.minute==20 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,MMAMs')
+            if (iDate.hour==13 and iDate.minute==0 ):
+                if (SpaGrndCon==1 or SpaGrndCon==3):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,CDA long period pointing file Check')
+            if (iDate.weekday()==3-1 and iDate.hour==16 and iDate.minute==0 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,J3 pointing file check')
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,J3 pass planning file check')
+            if (iDate.hour==17 and iDate.minute==0 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,OBT to UTC Check')
+            if (iDate.hour==17 and iDate.minute==15 ):
+                if (SpaGrndCon==1 or SpaGrndCon==3):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,PGF Aux file Check')
+            if (iDate.hour==18 and iDate.minute==0 ):
+                if (SpaGrndCon==1 or SpaGrndCon==3):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,CDA short period pointing file Check')
+            if (iDate.hour==19 and iDate.minute==0 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,MMAMs')
+            if (iDate.weekday()==6-1 and iDate.hour==23 and iDate.minute==59 ):
+                if (SpaGrndCon==1 or SpaGrndCon==2):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,Print schedule')
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,Load CHRONOPS')
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,Check ESTRACK Pass List')
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,Load countdown tool')
+            if (iDate.weekday()==6-1 and iDate.hour==23 and iDate.minute==59 ):
+                if (SpaGrndCon==1 or SpaGrndCon==3):
+                    Date_vet.append(iDate)
+                    menemonic_vet.append(',,Print WOTIS file')
+        iminute = iminute + 1
+        if (iDate>=DE):
+            flag_DE=1
+    Date_vet = Date_vet + AOSLOS
+    menemonic_vet = menemonic_vet + menemonic
+    
+    data = {'Date': Date_vet,
+            'Menemonic': menemonic_vet
+            }
+    
+    Data_menemonic_vet = pd.DataFrame (data, columns = ['Date','Menemonic'])
+    Data_menemonic_vet = Data_menemonic_vet.sort_values(by=['Date'])
+    Data_menemonic_vet = Data_menemonic_vet.reset_index()
+    Data_menemonic_vet = Data_menemonic_vet.drop(columns='index')
+    
+    return Date_vet, menemonic_vet, Data_menemonic_vet
+
+
+
+
+
+
+
+
+
+
+
+def fcn_wimpy_csv(FDF_Pass_M,filename, DS, DE, lastAz, SpaGrndCon, opts):
+    header = ['#,TRUE,D,,,']
+    rows=[]
+    
+    Date_vet, menemonic_vet, Data_menemonic_vet = fcn_MPF_events_csv(FDF_Pass_M, DS, DE , lastAz, SpaGrndCon, opts)
+    
+    for wrow in range(0,len(Date_vet)):
+#        AOSdate=FDF_Pass_M.loc[wrow,['CDA_AOS']]['CDA_AOS']
+#        AOS_datastr=datatime2str_csv(AOSdate)
+        
+#        Metop = FDF_Pass_M.loc[wrow,['M01']]['M01']
+#        MtOp='0'+str(Metop)
+#        nOrbit = str(FDF_Pass_M.loc[wrow,['CDA_nOrbit']]['CDA_nOrbit'])
+        
+#        LOSdate=FDF_Pass_M.loc[wrow,['CDA_LOS']]['CDA_LOS']
+#        LOS_datastr=datatime2str_csv(LOSdate)
+        
+#        AOSline=AOS_datastr+'Z,Info,M'+MtOp+',Pass Orbit '+nOrbit+',AOS CDA1/TTC1     TM:  OK      TC: OK     XBAND: OK'
+#        LOSline=LOS_datastr+'Z,Info,M'+MtOp+',Pass Orbit '+nOrbit+',LOS AZ:        TC Count: '
+#        rows.append([AOSline])
+#        rows.append([LOSline])
+        datastr=datatime2str_csv(Data_menemonic_vet.loc[wrow,['Date']]['Date'])
+        if ( SpaGrndCon == 1 ):
+            LogbookID = '5e7c9f51a585c67a02eeed0d'
+        elif ( SpaGrndCon == 2 ):
+            LogbookID = '5ad5c6b7a585c614bac889cd'
+        elif ( SpaGrndCon == 3 ):
+            LogbookID = '5ad5c6b7a585c614bac889cc'
+            
+        Eventline=datastr+',Entry,'+Data_menemonic_vet.loc[wrow,['Menemonic']]['Menemonic']+','+LogbookID
+        
+        rows.append([Eventline])
+    
+    with open(filename+".csv", 'w', newline='') as f:  
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(header) # write header
+        csv_writer.writerows(rows)
+        for line in f:
+            f.write(line.replace('"', ''))
+
+    f.close()
+#    with open("tmp.csv") as infile, open(filename+".csv", "w") as outfile:
+#        for line in infile:
+#            outfile.write(line.replace('"', ''))
+            
+#    os.remove("tmp.csv")
