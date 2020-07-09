@@ -232,6 +232,8 @@ def fcn_Wimpy_N19_Maga(DS,DE,Wimpyfilepath,MetOp,CDAn):
     CDA_AOS_M01=[]
     CDA_n=[]
     CDA_RNGDOP=[]
+    CDA_nRNG=[]
+    CDA_nDOP=[]
     CDA_AOS_Date=[]
     CDA_AOS_Azi=[]
     CDA_AOS_nOrbit=[]
@@ -343,17 +345,25 @@ def fcn_Wimpy_N19_Maga(DS,DE,Wimpyfilepath,MetOp,CDAn):
             OFFSET_3=TC_len-C_O-FIX
             if ( Window > 3*C_O ):
                 nRNGDOP = 3
+                i_CDA_nRNG = [CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_1),CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_2),CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_3)]
+                i_CDA_nDOP = [CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_1+10),CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_2+10),CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_3+10)]
             elif ( Window > 1.5*C_O):
                 nRNGDOP = 2
+                i_CDA_nRNG = [CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_1),CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_3)]
+                i_CDA_nDOP = [CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_1+10),CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_3+10)]
             else:
                 nRNGDOP = 1
-                
+                i_CDA_nRNG = [CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_2)]
+                i_CDA_nDOP = [CDA_AOS5_Date[-1]+datetime.timedelta(seconds=OFFSET_2+10)]
+                 
             #if (TC_len <= 397.5):
             #    nRNGDOP = 1
             #elif (TC_len <= 495):
             #    nRNGDOP = 2
             #else:
             #    nRNGDOP = 3
+            CDA_nRNG.append(i_CDA_nRNG)
+            CDA_nDOP.append(i_CDA_nDOP)
             CDA_RNGDOP.append(nRNGDOP)
                 
     data = {'S/C': CDA_AOS_SC,
@@ -364,6 +374,8 @@ def fcn_Wimpy_N19_Maga(DS,DE,Wimpyfilepath,MetOp,CDAn):
             'TM_Format': CDA_AOS_DEFPass,
             'AOCS': CDA_AOS_AOCS,
             'RNGDOP': CDA_RNGDOP,
+            'nRNG': CDA_nRNG,
+            'nDOP': CDA_nDOP,
             'ANX': ANX,
             'CDA_AOS': CDA_AOS_Date,
             'CDA_nOrbit': CDA_AOS_nOrbit,
@@ -393,7 +405,7 @@ def fcn_Wimpy_N19_Maga(DS,DE,Wimpyfilepath,MetOp,CDAn):
             }
     
 #    FDF_Pass = pd.DataFrame (data, columns = ['S/C','M01','ANX','CDA_AOS','CDA_nOrbit','CDA_AOS_Azi','CDA_AOSM','CDA_AOS5','CDA_Mid','CDA_LOS5','CDA_LOSM','CDA_LOS','ADA_AOS','ADA_AOS_Azi','ADA_AOSM','ADA_AOS5','ADA_Mid','ADA_LOS5','ADA_LOSM','ADA_LOS','CDA_CONF_PI','CDA_CONF_S','CDA_CONF_E','CDA_PASS_S','CDA_PASS_E','CDA_STANDBY_S','CDA_STANDBY_E'])
-    FDF_Pass = pd.DataFrame (data, columns = ['S/C','NOAA_BOS','GDS_GAC','M01','CDAn','TM_Format','AOCS','RNGDOP','ANX','CDA_AOS','CDA_nOrbit','CDA_AOS_Azi','CDA_AOSM','CDA_AOS5','CDA_Mid','CDA_Mid_El','CDA_LOS5','CDA_LOSM','CDA_LOS','ADA_AOS','ADA_AOS_Azi','ADA_AOSM','ADA_AOS5','ADA_Mid','ADA_LOS5','ADA_LOSM','ADA_LOS'])
+    FDF_Pass = pd.DataFrame (data, columns = ['S/C','NOAA_BOS','GDS_GAC','M01','CDAn','TM_Format','AOCS','RNGDOP','nRNG','nDOP','ANX','CDA_AOS','CDA_nOrbit','CDA_AOS_Azi','CDA_AOSM','CDA_AOS5','CDA_Mid','CDA_Mid_El','CDA_LOS5','CDA_LOSM','CDA_LOS','ADA_AOS','ADA_AOS_Azi','ADA_AOSM','ADA_AOS5','ADA_Mid','ADA_LOS5','ADA_LOSM','ADA_LOS'])
     return FDF_Pass, error_line
 
 

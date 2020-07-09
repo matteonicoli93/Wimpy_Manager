@@ -27,6 +27,8 @@ from py_support_files.wimpy_manager import *
 from py_support_files.wimpy_manager_N19 import *
 #from py_support_files.wimpy_pdf import *
 from py_support_files.wimpy_csv import *
+from py_support_files.wimpy_XTTC_FBK import *
+
 # =============================================================================
 # from wimpy_manager import *
 # from wimpy_manager_N19 import *
@@ -38,6 +40,8 @@ from py_support_files.wimpy_csv import *
 now_UTC =datetime.datetime.utcnow()
 now_local =datetime.datetime.now()
 timestamp = datetime.datetime.timestamp(now_UTC)
+
+WinUserName = os.getlogin()
 
 window = Tk()
 
@@ -83,7 +87,7 @@ chk_SideContrG.grid(column=2, row=0)
 lbl_Shift = Label(window, text="MetOp Antenna")
 lbl_Shift.grid(column=0, row=1)
 
-CDA_cur = 1
+CDA_cur = 2
 CDAfp = 'files'
 CDAf = CDAfp+'/Main_CDA.txt'
 Wfis_CDA = path.isfile(CDAf)
@@ -91,9 +95,9 @@ if (Wfis_CDA==True):
     fp=open(CDAf,'r')
     lines=fp.readlines()
     if (len(lines)==1 and (lines[0]=='1' or lines[0]=='2' )):
-        CDA_cur = int(lines[0])
+        CDA_cur = int(lines[0])+1
 combo_CDA = Combobox(window, width=10)
-combo_CDA['values']= ('', 'CDA1', 'CDA2', 'MAS', 'VL1', 'KOU', 'FBK', 'WAL')
+combo_CDA['values']= ('', 'AUTO','CDA1', 'CDA2', 'MAS', 'VL1', 'KOU', 'FBK', 'WAL')
 combo_CDA.current(CDA_cur) #set the selected item
 combo_CDA.grid(column=1, row=1, sticky="W")
 
@@ -101,12 +105,16 @@ combo_CDA.grid(column=1, row=1, sticky="W")
 DataStart_MSW = StringVar()
 DataEnd_MSW = StringVar()
 lbl_PreGenerate_Summary_MSW = Label(window, text="Mission Swap:")
-lbl_PreGenerate_Summary_MSW.grid(column=1, row=9, sticky="W")
+lbl_PreGenerate_Summary_MSW.grid(column=1, row=10, sticky="W")
 
 lbl_PreGenerate_DateStart_MSW = Label(window, text="")
-lbl_PreGenerate_DateStart_MSW.grid(column=1, row=10, sticky="W")
+lbl_PreGenerate_DateStart_MSW.grid(column=1, row=11, sticky="W")
 lbl_PreGenerate_DateEnd_MSW = Label(window, text="")
-lbl_PreGenerate_DateEnd_MSW.grid(column=1, row=11, sticky="W")
+lbl_PreGenerate_DateEnd_MSW.grid(column=1, row=12, sticky="W")
+
+
+
+
 
 def clicked_btn_MissionSwap():
     top = tk.Toplevel(window)
@@ -212,17 +220,26 @@ def clicked_btn_MissionSwap():
         ttk.Button(frame2, text="Update", command=print_update_cal_MSW).pack(side=TOP)
         
     def Apply_MSW():
-        res_PreGenerate_DateStart = "Date Start: " + txt_DataStart_MSW.get()
-        lbl_PreGenerate_DateStart_MSW.configure(text= res_PreGenerate_DateStart)
+        flagMSW = 1
+        if (txt_DataStart_MSW.get()== ""):
+            messagebox.showerror('error', 'NO Mission Swap date Start choice')
+            flagMSW = 0
+        if (flagMSW==1 and txt_DataEnd_MSW.get()==""):
+            messagebox.showerror('error', 'NO Mission Swap date end choice')
+            flagMSW=0
         
-        DS=datetime.datetime.strptime(DataStart_MSW.get(), '%Y-%m-%d %H:%M:%S')
-        DE=datetime.datetime.strptime(DataEnd_MSW.get(), '%Y-%m-%d %H:%M:%S')
-        
-        if (DE<DS):
-            messagebox.showerror('error', 'Date end Missin Swap greater than start one')
-        else:
-            res_PreGenerate_DateEnd = "Date End: " + txt_DataEnd_MSW.get()
-            lbl_PreGenerate_DateEnd_MSW.configure(text= res_PreGenerate_DateEnd) 
+        if (flagMSW==1):
+            res_PreGenerate_DateStart = "Date Start: " + txt_DataStart_MSW.get()
+            lbl_PreGenerate_DateStart_MSW.configure(text= res_PreGenerate_DateStart)
+            
+            DS=datetime.datetime.strptime(DataStart_MSW.get(), '%Y-%m-%d %H:%M:%S')
+            DE=datetime.datetime.strptime(DataEnd_MSW.get(), '%Y-%m-%d %H:%M:%S')
+            
+            if (DE<DS):
+                messagebox.showerror('error', 'Date end Missin Swap greater than start one')
+            else:
+                res_PreGenerate_DateEnd = "Date End: " + txt_DataEnd_MSW.get()
+                lbl_PreGenerate_DateEnd_MSW.configure(text= res_PreGenerate_DateEnd) 
     
     def Reset_MSW():
         res_PreGenerate_DateStart = ""
@@ -254,18 +271,18 @@ clicked_btn_MissSwap = Button(window, text="Mission Swap", command=clicked_btn_M
 clicked_btn_MissSwap.grid(column=2, row=1)
 
 lbl_Shift = Label(window, text="Shift")
-lbl_Shift.grid(column=0, row=3)
+lbl_Shift.grid(column=0, row=4)
 
 
 combo_Shift = Combobox(window, width=10)
 combo_Shift['values']= ('', 'Morning', 'Evening', 'Night')
-if (now_local.hour>6  and now_local.hour<12):
+if (now_local.hour>=6  and now_local.hour<12):
     combo_Shift.current(1) #set the selected item
 elif (now_local.hour>=12  and now_local.hour<20):
     combo_Shift.current(2) #set the selected item
 else:
     combo_Shift.current(3) #set the selected item    
-combo_Shift.grid(column=1, row=3, sticky="W")
+combo_Shift.grid(column=1, row=4, sticky="W")
 
 
 def Solar_Legal_Clock(anno):
@@ -275,28 +292,31 @@ def Solar_Legal_Clock(anno):
     giorno_di_ottobre = max(month[-1][calendar.SUNDAY], month[-2][calendar.SUNDAY])
     return giorno_di_marzo, giorno_di_ottobre
 
-def clicked_btn_Shift():
+def clicked_btn_Shift1():
     if (combo_Shift.get()!=''):
         delta=(now_local-now_UTC).seconds
         delta =datetime.timedelta(seconds=delta)
         if (combo_Shift.get()=='Morning'):
             DS=datetime.datetime(now_local.year, now_local.month, now_local.day, 6, 0, 0, 0)-delta
-            DE=datetime.datetime(now_local.year, now_local.month, now_local.day, 12, 45, 0, 0)-delta
+            DE=datetime.datetime(now_local.year, now_local.month, now_local.day, 12, 0, 0, 0)-delta
         elif (combo_Shift.get()=='Evening'):
             DS=datetime.datetime(now_local.year, now_local.month, now_local.day, 12, 30, 0, 0)-delta
-            DE=datetime.datetime(now_local.year, now_local.month, now_local.day, 20, 15, 0, 0)-delta
+            DE=datetime.datetime(now_local.year, now_local.month, now_local.day, 20, 0, 0, 0)-delta
         elif (combo_Shift.get()=='Night'):
-            DS=datetime.datetime(now_local.year, now_local.month, now_local.day, 20, 00, 0, 0)-delta
+            DS=datetime.datetime(now_local.year, now_local.month, now_local.day, 20, 0, 0, 0)-delta
             giorno_di_marzo, giorno_di_ottobre = Solar_Legal_Clock(now_local.year)
-            DE=datetime.datetime(now_local.year, now_local.month, now_local.day, 6, 15, 0, 0)+datetime.timedelta(days=1)-delta
+            DE=datetime.datetime(now_local.year, now_local.month, now_local.day, 6, 0, 0, 0)+datetime.timedelta(days=1)-delta
             if (DE.month==3 and DE.day==giorno_di_marzo):
                 DE=DE-datetime.timedelta(hours=1)
             if (DE.month==10 and DE.day==giorno_di_ottobre):
                 DE=DE+datetime.timedelta(hours=1)
         DataStart.set(DS)
         DataEnd.set(DE)
-clicked_btn_Shift = Button(window, text="Update", command=clicked_btn_Shift)
-clicked_btn_Shift.grid(column=2, row=3)
+
+
+
+clicked_btn_Shift = Button(window, text="Update", command=clicked_btn_Shift1)
+clicked_btn_Shift.grid(column=2, row=4)
 
 
 lbl_SC = Label(window, text="S/C")
@@ -307,18 +327,123 @@ combo_SC['values']= ( '', 'All MetOp','MetOp-A', 'MetOp-B', 'MetOp-C', 'N19', 'N
 combo_SC.current(1) #set the selected item
 combo_SC.grid(column=1, row=2, sticky="W")
 
+
+
 selected_NOAA_BOS = BooleanVar()
 selected_NOAA_BOS.set(True) #set check state
 chk_NOAA_BOS = Checkbutton(window, text='NOAA BOS', var=selected_NOAA_BOS)
-chk_NOAA_BOS.grid(column=2, row=2)
+chk_NOAA_BOS.grid(column=1, row=3)
 selected_Weekly = BooleanVar()
 selected_Weekly.set(True) #set check state
-chk_Weekly = Checkbutton(window, text='Weekly', var=selected_Weekly)
-chk_Weekly.grid(column=3, row=2)
+chk_Weekly = Checkbutton(window, text='Daily Events', var=selected_Weekly)
+chk_Weekly.grid(column=2, row=3)
 #chk_state_M01 = BooleanVar()
 #chk_state_M01.set(True) #set check state
 #chk_M01 = Checkbutton(window, text='M01', var=chk_state_M01)
 #chk_M01.grid(column=2, row=2)
+
+
+
+
+
+lbl_PreGenerate_Summary_XTTCFBK = Label(window, text="XTTC or FBK:")
+lbl_PreGenerate_Summary_XTTCFBK.grid(column=2, row=10, sticky="W")
+lbl_PreGenerate_CDA_XTTCFBK = Label(window, text="")
+lbl_PreGenerate_CDA_XTTCFBK.grid(column=2, row=11, sticky="W")
+lbl_PreGenerate_CooVis_XTTCFBK = Label(window, text="")
+lbl_PreGenerate_CooVis_XTTCFBK.grid(column=2, row=12, sticky="W")
+lbl_PreGenerate_SC_XTTCFBK = Label(window, text="")
+lbl_PreGenerate_SC_XTTCFBK.grid(column=2, row=13, sticky="W")
+lbl_PreGenerate_nOrbit_XTTCFBK = Label(window, text="")
+lbl_PreGenerate_nOrbit_XTTCFBK.grid(column=2, row=14, sticky="W")
+
+XTTCFBK_nOrbit = StringVar()
+chk_state_CooVis = BooleanVar()
+chk_state_CooVis.set(False) #set check state
+XTTC_FBK_Ant = ( '','KOU', 'VL1','MAS','FBK','WAL')
+
+def clicked_btn_XTTCFBK1():
+    top_XTTCFBK = tk.Toplevel(window)
+    top_XTTCFBK.title("XTTC and FBK")
+    
+    lbl_CDA_XTTCFBK = Label(top_XTTCFBK, text="Antenna")
+    lbl_CDA_XTTCFBK.grid(column=0, row=0)
+    combo_CDA_XTTCFBK = Combobox(top_XTTCFBK, width=12)
+    combo_CDA_XTTCFBK['values']= XTTC_FBK_Ant
+    combo_CDA_XTTCFBK.current(0) #set the selected item
+    combo_CDA_XTTCFBK.grid(column=1, row=0, sticky="W")
+    
+    
+    chk_CooVis = Checkbutton(top_XTTCFBK, text='CooVis', var=chk_state_CooVis)
+    chk_CooVis.grid(column=2, row=0)
+    
+    lbl_SC_XTTCFBK = Label(top_XTTCFBK, text="S/C")
+    lbl_SC_XTTCFBK.grid(column=0, row=1)
+    combo_SC_XTTCFBK = Combobox(top_XTTCFBK, width=12)
+    combo_SC_XTTCFBK['values']= ( '','MetOp-A', 'MetOp-B', 'MetOp-C')
+    combo_SC_XTTCFBK.current(0) #set the selected item
+    combo_SC_XTTCFBK.grid(column=1, row=1, sticky="W")
+    
+    lbl_nSC_XTTCFBK = Label(top_XTTCFBK, text="n° Orbit")
+    lbl_nSC_XTTCFBK.grid(column=0, row=2)
+    txt_XTTCFBK_nOrbit = Entry(top_XTTCFBK, width=15, textvariable=XTTCFBK_nOrbit)
+    txt_XTTCFBK_nOrbit.grid(column=1, row=2)
+    
+    def Apply_XTTCFBK():
+        flag_apply_XTTCFBK = 1
+        if (combo_CDA_XTTCFBK.get()==''):
+            messagebox.showerror('error', 'NO XTTC or FBK Antenna choice')
+            flag_apply_XTTCFBK=0
+        if (flag_apply_XTTCFBK==1 and combo_SC_XTTCFBK.get()==''):
+            messagebox.showerror('error', 'NO XTTC or FBK Antenna choice')
+            flag_apply_XTTCFBK=0
+        if (flag_apply_XTTCFBK==1 and txt_XTTCFBK_nOrbit.get()==''):
+            messagebox.showerror('error', 'NO XTTC or FBK n° Orbit choice')
+            flag_apply_XTTCFBK=0
+        
+        if (flag_apply_XTTCFBK==1):
+            Antenna_XTTC_FBK=combo_CDA_XTTCFBK.get()
+            if (Antenna_XTTC_FBK== 'KOU' or Antenna_XTTC_FBK== 'VL1' or Antenna_XTTC_FBK== 'MAS' ):
+                chk_state_CooVis.set(False)
+            res_PreGenerate_DateStart = "Antenna: " + combo_CDA_XTTCFBK.get()
+            lbl_PreGenerate_CDA_XTTCFBK.configure(text= res_PreGenerate_DateStart)
+            
+            if (chk_state_CooVis.get()==True):
+                res_PreGenerate_DateStart = "Coo-Visibility: YES"
+            else:
+                res_PreGenerate_DateStart = "Coo-Visibility: NO"
+            lbl_PreGenerate_CooVis_XTTCFBK.configure(text= res_PreGenerate_DateStart)
+            
+            res_PreGenerate_DateStart = "S/C: " + combo_SC_XTTCFBK.get()
+            lbl_PreGenerate_SC_XTTCFBK.configure(text= res_PreGenerate_DateStart)
+            
+            res_PreGenerate_DateEnd = "n° Orbit: " + txt_XTTCFBK_nOrbit.get()
+            lbl_PreGenerate_nOrbit_XTTCFBK.configure(text= res_PreGenerate_DateEnd) 
+    
+    def Reset_XTTCFBK():
+        res_PreGenerate_DateStart = ""
+        lbl_PreGenerate_CDA_XTTCFBK.configure(text= res_PreGenerate_DateStart)
+        res_PreGenerate_DateStart = ""
+        lbl_PreGenerate_CooVis_XTTCFBK.configure(text= res_PreGenerate_DateStart)
+        res_PreGenerate_DateStart = ""
+        lbl_PreGenerate_SC_XTTCFBK.configure(text= res_PreGenerate_DateStart)
+        res_PreGenerate_DateEnd = ""
+        lbl_PreGenerate_nOrbit_XTTCFBK.configure(text= res_PreGenerate_DateEnd) 
+    
+    btn_AP_XTTCFBK = Button(top_XTTCFBK, text="Apply", command=Apply_XTTCFBK)
+    btn_AP_XTTCFBK.grid(column=0, row=3, sticky = tk.W+tk.E)
+    btn_Re_XTTCFBK = Button(top_XTTCFBK, text="Reset", command=Reset_XTTCFBK)
+    btn_Re_XTTCFBK.grid(column=2, row=3, sticky = tk.W+tk.E)
+    
+clicked_btn_XTTCFBK = Button(window, text="XTTC or FBK", command=clicked_btn_XTTCFBK1)
+clicked_btn_XTTCFBK.grid(column=3, row=3)
+
+
+
+
+
+
+
 
 
 
@@ -332,13 +457,13 @@ chk_Weekly.grid(column=3, row=2)
 
 
 lbl_DataFormat = Label(window, text="Date Format: YYYY-MM-DD hh:mm:ss [UTC]")
-lbl_DataFormat.grid(column=0, row=4)
+lbl_DataFormat.grid(column=0, row=5)
 
 DataStart = StringVar()
 lbl_DataStart = Label(window, text="Date Start")
-lbl_DataStart.grid(column=0, row=5)
+lbl_DataStart.grid(column=0, row=6)
 txt_DataStart = Entry(window, width=20, textvariable=DataStart)
-txt_DataStart.grid(column=1, row=5)
+txt_DataStart.grid(column=1, row=6)
 
 
 
@@ -393,14 +518,14 @@ def calendar_view():
     ttk.Button(frame2, text="now UTC", command=clicked_btn_now_UTC).pack(side=LEFT)
     
 btn_now_UTC = Button(window, text="Calendar", command=calendar_view)
-btn_now_UTC.grid(column=2, row=5)
+btn_now_UTC.grid(column=2, row=6)
 
 
 DataEnd = StringVar()
 lbl_DataEnd = Label(window, text="Date End")
-lbl_DataEnd.grid(column=0, row=6)
+lbl_DataEnd.grid(column=0, row=7)
 txt_DataEnd = Entry(window, width=20, textvariable=DataEnd)
-txt_DataEnd.grid(column=1, row=6)
+txt_DataEnd.grid(column=1, row=7)
 
 
 def clicked_btn_Calendar2():
@@ -427,13 +552,13 @@ def clicked_btn_Calendar2():
                 deltatime_SL=datetime.timedelta(hours=1)
             
             if (combo_pS.get()=='Morning'):
-                DE=datetime.datetime(DS.year, DS.month, DS.day, 12, 45, 0, 0)-deltatime_SL
+                DE=datetime.datetime(DS.year, DS.month, DS.day, 12, 30, 0, 0)-deltatime_SL
                 DataEnd.set(DE)
             elif (combo_pS.get()=='Evening'):
-                DE=datetime.datetime(DS.year, DS.month, DS.day, 20, 15, 0, 0)-deltatime_SL
+                DE=datetime.datetime(DS.year, DS.month, DS.day, 20, 0, 0, 0)-deltatime_SL
                 DataEnd.set(DE)
             elif (combo_pS.get()=='Night'):
-                DE=datetime.datetime(DS.year, DS.month, DS.day, 6, 15, 0, 0)+datetime.timedelta(days=1)-deltatime_SL
+                DE=datetime.datetime(DS.year, DS.month, DS.day, 6, 0, 0, 0)+datetime.timedelta(days=1)-deltatime_SL
                 if (DE.month==3 and DE.day==giorno_di_marzo and DS<datetime.datetime(2020, 3, giorno_di_marzo, 1, 0, 0, 0)):
                     DE=DE-datetime.timedelta(hours=1)
                 if (DE.month==10 and DE.day==giorno_di_ottobre and DS<datetime.datetime(2020, 10, giorno_di_ottobre, 1, 0, 0, 0)):
@@ -506,7 +631,7 @@ def clicked_btn_Calendar2():
 
         
 clicked_btn_Update = Button(window, text="Calendar", command=clicked_btn_Calendar2)
-clicked_btn_Update.grid(column=2, row=6)
+clicked_btn_Update.grid(column=2, row=7)
 
 
 
@@ -515,7 +640,7 @@ clicked_btn_Update.grid(column=2, row=6)
 
 
 lbl_file = Label(window, text="File format")
-lbl_file.grid(column=0, row=7)
+lbl_file.grid(column=0, row=8)
 
 #selected_fileContr = IntVar()
 #rad_pdfcsv = Radiobutton(window,text='.pdf & .csv', value=1, variable=selected_fileContr)
@@ -533,7 +658,7 @@ lbl_file.grid(column=0, row=7)
 selected_filecsv = BooleanVar()
 selected_filecsv.set(True) #set check state
 chk_SideContrG = Checkbutton(window, text='.csv', var=selected_filecsv)
-chk_SideContrG.grid(column=2, row=7)
+chk_SideContrG.grid(column=2, row=8)
 
 
 
@@ -541,15 +666,15 @@ chk_SideContrG.grid(column=2, row=7)
 
 
 lbl_PreGenerate_Summary = Label(window, text="Summary:")
-lbl_PreGenerate_Summary.grid(column=0, row=9, sticky="W")
+lbl_PreGenerate_Summary.grid(column=0, row=10, sticky="W")
 lbl_PreGenerate_Side = Label(window, text="")
-lbl_PreGenerate_Side.grid(column=0, row=10, sticky="W")
+lbl_PreGenerate_Side.grid(column=0, row=11, sticky="W")
 lbl_PreGenerate_SC = Label(window, text="")
-lbl_PreGenerate_SC.grid(column=0, row=11, sticky="W")
+lbl_PreGenerate_SC.grid(column=0, row=12, sticky="W")
 lbl_PreGenerate_DateStart = Label(window, text="")
-lbl_PreGenerate_DateStart.grid(column=0, row=12, sticky="W")
+lbl_PreGenerate_DateStart.grid(column=0, row=13, sticky="W")
 lbl_PreGenerate_DateEnd = Label(window, text="")
-lbl_PreGenerate_DateEnd.grid(column=0, row=13, sticky="W")
+lbl_PreGenerate_DateEnd.grid(column=0, row=14, sticky="W")
 
 
 
@@ -576,9 +701,28 @@ def messageerror():
     if (flag==1 and len(DataEnd.get())!=19):
         messagebox.showerror('error', 'Data Start format')
         flag=0
-    if (flag==1 and selected_filePDF.get()==False and selected_filecsv.get()==False):
+    if (flag==1 and selected_filecsv.get()==False):
+    #if (flag==1 and selected_filePDF.get()==False and selected_filecsv.get()==False):
         messagebox.showerror('error', 'NO file choice')
         flag=0
+    if (flag==1 and lbl_PreGenerate_DateStart_MSW.cget("text")== "Date Start: "):
+        messagebox.showerror('error', 'NO Mission Swap date Start choice')
+        flag=0
+    if (flag==1 and lbl_PreGenerate_DateEnd_MSW.cget("text")=="Date End: "):
+        messagebox.showerror('error', 'NO Mission Swap date end choice')
+        flag=0
+    if (flag==1 and len(lbl_PreGenerate_CDA_XTTCFBK.cget("text"))!=0):
+        if (len(lbl_PreGenerate_CDA_XTTCFBK.cget("text"))<9):
+            messagebox.showerror('error', 'NO XTTC or FBK Antenna choice')
+            flag=0
+    if (flag==1 and len(lbl_PreGenerate_CDA_XTTCFBK.cget("text"))!=0):
+        if (len(lbl_PreGenerate_SC_XTTCFBK.cget("text"))<5):
+            messagebox.showerror('error', 'NO XTTC or FBK Antenna choice')
+            flag=0
+    if (flag==1 and len(lbl_PreGenerate_CDA_XTTCFBK.cget("text"))!=0):
+        if (len(lbl_PreGenerate_nOrbit_XTTCFBK.cget("text"))<10):
+            messagebox.showerror('error', 'NO XTTC or FBK n° Orbit choice')
+            flag=0
     return flag
 
 def msg_wimpyerror(error_line, wimpy_path):
@@ -657,7 +801,7 @@ def clicked_Generate():
         DE=datetime.datetime.strptime(DataEnd.get(), '%Y-%m-%d %H:%M:%S')
         
         flag_MSW = 0
-        if (lbl_PreGenerate_DateStart_MSW.cget("text")!= "" and lbl_PreGenerate_DateStart_MSW.cget("text")!=""):
+        if (lbl_PreGenerate_DateStart_MSW.cget("text")!= "" and lbl_PreGenerate_DateEnd_MSW.cget("text")!=""):
             DS_MSW=datetime.datetime.strptime(lbl_PreGenerate_DateStart_MSW.cget("text")[12:31], '%Y-%m-%d %H:%M:%S')
             DE_MSW=datetime.datetime.strptime(lbl_PreGenerate_DateEnd_MSW.cget("text")[10:29], '%Y-%m-%d %H:%M:%S')
             if (DE_MSW<DS_MSW):
@@ -676,7 +820,7 @@ def clicked_Generate():
         else:
             res_PreGenerate_DateEnd = "Date End: " + txt_DataEnd.get()
             lbl_PreGenerate_DateEnd.configure(text= res_PreGenerate_DateEnd)
-            #Wfp='P:\\groups\\OPS\\EPS System Ops\\Wimpys'
+            Wfp='P:\\groups\\OPS\\EPS System Ops\\Wimpys'
             Wfp = 'files'
             #Wfp = 'C:\\Users\\matte\\Dropbox\\Job\\Wimpy\\files'
             TCHfp='H:\DesktopW10\MyDocument\wimpys'
@@ -693,7 +837,22 @@ def clicked_Generate():
             Wfis_N19 = path.isfile(Wimpyfilepath_N19)
             Wfis_N18 = path.isfile(Wimpyfilepath_N18)
             
+            
+            MPF_path = 'H:\DesktopW10\MyDocument\MyFiles\PGF_and_FEP_dumpsynchs_time_rules_'
+            MPF_PGFfilepath = MPF_path+'\PGFDumpSynchSchedule_e_D335_00h30_D344_00h00__01.mpf'
+            if (path.isfile(MPF_PGFfilepath)):
+                PGFDumpSynchSchedule = MPF_PGFDumpSynchSchedule(MPF_PGFfilepath)
+                PGFDSS = [1,PGFDumpSynchSchedule]
+            else:
+                PGFDSS = [0.0]
+            
             CDAn=combo_CDA.get()
+            
+            XTTC_FBK_info = [0,0,0,0,0,0]
+            if (lbl_PreGenerate_SC_XTTCFBK.cget("text")!= ""):
+                Antenna_XTTC_FBK = lbl_PreGenerate_CDA_XTTCFBK.cget("text")[9:-1]+lbl_PreGenerate_CDA_XTTCFBK.cget("text")[-1:]
+                nOrbit_cust = int(XTTCFBK_nOrbit.get())
+            
             
             if (Wfis_M01 == True):
                 if (combo_SC.get()=='MetOp-B' or combo_SC.get()=='All MetOp'):
@@ -703,7 +862,7 @@ def clicked_Generate():
                     FDF_Pass_MB, error_line_MB = fcn_Wimpy_Maga(DS, DE, Wimpyfilepath1,'MetOp-B',CDAn)
                     flag_wimpyerror = msg_wimpyerror(error_line_MB, Wimpyfilepath1)
                     
-                    FDF_MPF_PassB, MPF_Pass_MB = fcn_MPF_mang(FDF_Pass_MB)
+                    FDF_MPF_PassB, MPF_Pass_MB = fcn_MPF_mang(FDF_Pass_MB, PGFDSS)
     #                TC_Pass_MB, draft = fcn_TCHIST_mang(FDF_MPF_PassB, TCHISTfilepath1)
                     
                     frames_FDF_B = [FDF_Pass_MB]
@@ -711,6 +870,11 @@ def clicked_Generate():
                     FDF_MPFD_Pass = FDF_MPF_PassB
     #                frames_TC_B = [TC_Pass_MB]
                     frame_TC=frames_MPF_B
+                    
+                    
+                    if (lbl_PreGenerate_SC_XTTCFBK.cget("text")[-1:]== "B"):
+                        XTTC_FBK = fcn_XTTC_FBK(Wimpyfilepath1, nOrbit_cust)
+                        XTTC_FBK_info =[1,chk_state_CooVis.get(),Antenna_XTTC_FBK,'M01',nOrbit_cust,XTTC_FBK]
             
             if (Wfis_M02 == True):
                 if (combo_SC.get()=='MetOp-A' or combo_SC.get()=='All MetOp'):
@@ -719,7 +883,7 @@ def clicked_Generate():
                     FDF_Pass_MA, error_line_MA = fcn_Wimpy_Maga(DS, DE, Wimpyfilepath2,'MetOp-A',CDAn)
                     flag_wimpyerror = msg_wimpyerror(error_line_MA, Wimpyfilepath2)
                     
-                    FDF_MPF_PassA, MPF_Pass_MA = fcn_MPF_mang(FDF_Pass_MA)
+                    FDF_MPF_PassA, MPF_Pass_MA = fcn_MPF_mang(FDF_Pass_MA, PGFDSS)
     #                TC_Pass_MA, draft = fcn_TCHIST_mang(FDF_MPF_PassA, TCHISTfilepath2)
                     
                     
@@ -729,7 +893,12 @@ def clicked_Generate():
     #                frames_TC_A = [TC_Pass_MA]
                     
                     frame_TC=frames_MPF_A
-            
+                    
+                    
+                    if (lbl_PreGenerate_SC_XTTCFBK.cget("text")[-1:]== "A"):
+                        XTTC_FBK = fcn_XTTC_FBK(Wimpyfilepath2, nOrbit_cust)
+                        XTTC_FBK_info =[1,chk_state_CooVis.get(),Antenna_XTTC_FBK,'M02',nOrbit_cust,XTTC_FBK]
+                    
             if (Wfis_M03 == True):
                 if (combo_SC.get()=='MetOp-C' or combo_SC.get()=='All MetOp'):
                     TCHISTfilepath3 = TCHfp+'/M03TCHIST'
@@ -737,7 +906,7 @@ def clicked_Generate():
                     FDF_Pass_MC, error_line_MC = fcn_Wimpy_Maga(DS, DE, Wimpyfilepath3,'MetOp-C',CDAn)
                     flag_wimpyerror = msg_wimpyerror(error_line_MC, Wimpyfilepath3)
                     
-                    FDF_MPF_PassC, MPF_Pass_MC = fcn_MPF_mang(FDF_Pass_MC)
+                    FDF_MPF_PassC, MPF_Pass_MC = fcn_MPF_mang(FDF_Pass_MC, PGFDSS)
     #                TC_Pass_MC, draft = fcn_TCHIST_mang(FDF_MPF_PassC, TCHISTfilepath3)
                     
                     frames_FDF_C = [FDF_Pass_MC]
@@ -745,7 +914,12 @@ def clicked_Generate():
                     FDF_MPFD_Pass = FDF_MPF_PassC
     #                frames_TC_C = [TC_Pass_MC]
                     frame_TC=frames_MPF_C
-            
+                    
+                    
+                    if (lbl_PreGenerate_SC_XTTCFBK.cget("text")[-1:]== "C"):
+                        XTTC_FBK = fcn_XTTC_FBK(Wimpyfilepath3, nOrbit_cust)
+                        XTTC_FBK_info =[1,chk_state_CooVis.get(),Antenna_XTTC_FBK,'M03',nOrbit_cust,XTTC_FBK]
+                    
             if (CDAn[0:3]=='CDA'):
                 CDAn_N = CDAn[0:3]
                 if (CDAn[3:4]=='1'):
@@ -761,7 +935,7 @@ def clicked_Generate():
                     FDF_Pass_N19, error_line_N19 = fcn_Wimpy_N19_Maga(DS,DE,Wimpyfilepath_N19,'N19',CDAn_N)
                     flag_wimpyerror = msg_wimpyerror(error_line_N19, Wimpyfilepath_N19)
                     
-                    FDF_MPF_Pass_N19, MPF_Pass_N19 = fcn_MPF_mang(FDF_Pass_N19)
+                    FDF_MPF_Pass_N19, MPF_Pass_N19 = fcn_MPF_mang(FDF_Pass_N19, PGFDSS)
                     
                     frames_FDF_N19 = [FDF_Pass_N19]
                     frames_MPF_N19 = [FDF_MPF_Pass_N19]
@@ -773,7 +947,7 @@ def clicked_Generate():
                     FDF_Pass_N18, error_line_N18 = fcn_Wimpy_N19_Maga(DS,DE,Wimpyfilepath_N18,'N18',CDAn_N)
                     flag_wimpyerror = msg_wimpyerror(error_line_N18, Wimpyfilepath_N18)
                     
-                    FDF_MPF_Pass_N18, MPF_Pass_N18 = fcn_MPF_mang(FDF_Pass_N18)
+                    FDF_MPF_Pass_N18, MPF_Pass_N18 = fcn_MPF_mang(FDF_Pass_N18, PGFDSS)
                     
                     frames_FDF_N18 = [FDF_Pass_N18]
                     frames_MPF_N18 = [FDF_MPF_Pass_N18]
@@ -805,6 +979,7 @@ def clicked_Generate():
                     Global_frame_TC = Global_frame_TC + frames_MPF_N
                     
                 
+                TC_Pass_M = mergeWimpy( Global_frame_TC, 1, DS, DE , MSW_info)
             
  #           if (selected_filecsv.get()==True):
  #               Click_Gen_Pdf(combo_SC.get(),TC_Pass_M)
@@ -821,6 +996,8 @@ def clicked_Generate():
                         opts = 3
                     else:
                         opts = 2
+                    
+                    SHOfalg = 0
                     
                     new_DS = DS
                     new_DE = DE
@@ -873,21 +1050,23 @@ def clicked_Generate():
                         if (selected_NOAA_BOS.get()==True):
                             strInfo = strInfo+'_NOAA_BOS'
                         if (selected_Weekly.get()==True):
-                            strInfo = strInfo+'_Weekly'
+                            strInfo = strInfo+'_Daily'
                         i_filename ='uberlogBatch_from_'+strShiftfilename_from+'_to_'+strShiftfilename_to+'_'+strEPSSide+'_'+strInfo
                         i_TC_Pass_M = mergeWimpy( Global_frame_TC, 1, new_DS, new_DE , MSW_info)
-                        fcn_wimpy_csv( i_TC_Pass_M, i_filename, new_DS, new_DE, SpaGrndCon, opts )
+                        fcn_wimpy_csv( i_TC_Pass_M, i_filename, new_DS, new_DE, SpaGrndCon, opts , SHOfalg, XTTC_FBK_info)
                     
                 
                 
 btn_Generate = Button(window, text="Generate", command=clicked_Generate)
-btn_Generate.grid(column=0, row=8, columnspan = 5, sticky = tk.W+tk.E)
+btn_Generate.grid(column=0, row=9, columnspan = 5, sticky = tk.W+tk.E)
 
 
 
 
-
-
+clicked_btn_Shift1()
+# =============================================================================
+# DataStart.set(datetime.datetime(now_UTC.year, now_UTC.month, now_UTC.day, now_UTC.hour, now_UTC.minute, now_UTC.second, 0))
+# =============================================================================
 
 window.mainloop()
 
