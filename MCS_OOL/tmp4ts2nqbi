@@ -1,0 +1,55 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Nov  8 16:47:35 2020
+
+@author: matte
+"""
+import tkinter as tk
+from tkinter import Frame, messagebox, scrolledtext 
+
+
+
+
+
+
+
+def Destroy_MCS_OOL(self):
+    if (hasattr(self, 'PW_MCS_OOL') == True):
+        self.PW_MCS_OOL.destroy()
+    # end if
+    return self
+# end def
+
+
+
+
+
+
+
+
+
+
+
+def Layout_MCS_OOL(self):
+    self.PW_MCS_OOL = tk.PanedWindow(self.master, orient = 'vertical')
+    self.PW_MCS_OOL.pack(fill = tk.X )
+    
+    self.Fr_MCS_OOL_S = tk.Frame(self.PW_MCS_OOL)
+    self.Fr_MCS_OOL_S.pack(fill = tk.X, side='left', expand=True)
+    
+    
+    self.Fr_MCS_OOL_SS = tk.Frame(self.Fr_MCS_OOL_S)
+    self.Fr_MCS_OOL_SS.pack(fill = tk.X, side='left', expand=True)
+    lbl_MCS_OOL_SpaCon = tk.Label(self.Fr_MCS_OOL_SS, text="SpaCon", anchor='w')
+    lbl_MCS_OOL_SpaCon.pack()
+    
+    
+    
+    self.Fr_MCS_OOL_GrnCon = tk.Frame(self.PW_MCS_OOL)
+    self.Fr_MCS_OOL_GrnCon.pack(fill = tk.X, side='right', expand=True)
+    
+    lbl_MCS_OOL_GrnCon = tk.Label(self.Fr_MCS_OOL_GrnCon, text="SpaCon", anchor='w')
+    lbl_MCS_OOL_GrnCon.pack()
+    
+    return self
+#end def

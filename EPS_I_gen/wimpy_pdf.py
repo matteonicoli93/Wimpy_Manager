@@ -4,6 +4,8 @@ Created on Tue Mar 31 18:25:49 2020
 
 @author: matte
 """
+
+
 import datetime
 
 from reportlab.platypus import SimpleDocTemplate
@@ -118,13 +120,18 @@ def date2str(dataAOS):
 def DataMag_iPass_SpaGrndCon(PassM0136h,i_Pass,SpaGrndCon):
     SC=PassM0136h.loc[i_Pass,['S/C']]['S/C']
     M01=PassM0136h.loc[i_Pass,['M01']]['M01']
-    NOAA_BOS = FDF_MPF_Pass_M.loc[0,['NOAA_BOS']]['NOAA_BOS']
+    NOAA_BOS = PassM0136h.loc[i_Pass,['NOAA_BOS']]['NOAA_BOS']
     
     CDAn=PassM0136h.loc[i_Pass,['CDAn']]['CDAn']
     nOrbit=PassM0136h.loc[i_Pass,['CDA_nOrbit']]['CDA_nOrbit']
     DEF_Pss=PassM0136h.loc[i_Pass,['TM_Format']]['TM_Format']
-    AOS=PassM0136h.loc[i_Pass,['CDA_AOSM']]['CDA_AOSM']
-    LOS=PassM0136h.loc[i_Pass,['CDA_LOSM']]['CDA_LOSM']
+    
+    AOCS_TMF = ''
+    if (DEF_Pss=='DEF_ROUT'):
+        AOCS_TMF = DEF_Pss
+    
+    AOS=PassM0136h.loc[i_Pass,['CDA_AOS']]['CDA_AOS']
+    LOS=PassM0136h.loc[i_Pass,['CDA_LOS']]['CDA_LOS']
     AOS_Az=PassM0136h.loc[i_Pass,['CDA_AOS_Azi']]['CDA_AOS_Azi']
     
     CDA_CONF_PI=PassM0136h.loc[i_Pass,['CDA_CONF_PI']]['CDA_CONF_PI']
@@ -194,35 +201,35 @@ def DataMag_iPass_SpaGrndCon(PassM0136h,i_Pass,SpaGrndCon):
     if (SpaGrndCon==1):
         if (M01==1):
             data_iPass = [
-                ['SC: '+SC                  , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                  , 'PI Activ: '                  ,''],
+                ['S/C: '+SC                 , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                  , 'PI Activ: '                  ,''],
                 ['Orbit: '+str(nOrbit)      , 'CONF: '+CDA_CONF_Ssrt                    , 'ACQ S: '+FEP_ACQ_STARTsrt    , 'ACQ S: '+PGF_ACQ_STARTsrt    ,''],
                 [ CDAn+' Az: '+str(AOS_Az)  , '            '+CDA_CONF_Esrt              , 'ACQ E: '+FEP_ACQ_STOPsrt     , 'ACQ E: '+PGF_ACQ_STOPsrt     ,''],
-                ['SVL AOSM: '+AOSstr        , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt      , 'TT S: '+PGF_TT_STARTsrt      ,'ADA Start: '+ADA_Midsrt],
-                ['SVL LOSM: '+LOSstr        , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt       , 'TT E: '+PGF_TT_STOPsrt       ,'SSR GAP: '+SSR_TTsrt],
-                [DEF_Pss                    , 'STANDBY: '+CDA_STANDBY_Ssrt              , 'ORBIT S: '+str(nOrbit-1)     , 'ORBIT S: '+str(nOrbit-1)     ,''],
+                ['SVL AOS: '+AOSstr         , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt      , 'TT S: '+PGF_TT_STARTsrt      ,'ADA Start: '+ADA_Midsrt],
+                ['SVL LOS: '+LOSstr         , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt       , 'TT E: '+PGF_TT_STOPsrt       ,'SSR GAP: '+SSR_TTsrt],
+                [AOCS_TMF                   , 'STANDBY: '+CDA_STANDBY_Ssrt              , 'ORBIT S: '+str(nOrbit-1)     , 'ORBIT S: '+str(nOrbit-1)     ,''],
                 [''                         , '                   '+CDA_STANDBY_Esrt    , 'ORBIT E: '+str(nOrbit)       , 'ORBIT E: '+str(nOrbit)       ,''],
                 [''                         , ''                                        , 'SENS S: '+FEP_SEN_STARTsrt   , 'SENS S: '+PGF_SEN_STARTsrt   ,''],
                 [''                         , ''                                        , 'SENS E: '+FEP_SEN_STARTsrt   , 'SENS E: '+PGF_SEN_STOPsrt    ,''],
             ]
         elif (M01==2 or M01==3):
             data_iPass = [
-                ['SC: '+SC                  , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ,''],
+                ['S/C: '+SC                 , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ,''],
                 ['Orbit: '+str(nOrbit)      , 'CONF: '+CDA_CONF_Ssrt                    , 'ACQ S: '+FEP_ACQ_STARTsrt     , 'ACQ S: '+PGF_ACQ_STARTsrt   ,''],
                 [ CDAn+' Az: '+str(AOS_Az)  , '            '+CDA_CONF_Esrt              , 'ACQ E: '+FEP_ACQ_STOPsrt      , 'ACQ S: '+PGF_ACQ_STOPsrt    ,''],
-                ['SVL AOSM: '+AOSstr        , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ,''],
-                ['SVL LOSM: '+LOSstr        , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ,''],
-                [DEF_Pss                    , 'STANDBY: '+CDA_STANDBY_Ssrt              , 'ORBIT S: '+str(nOrbit-1)      , 'ORBIT S: '+str(nOrbit-1)    ,''],
+                ['SVL AOS: '+AOSstr         , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ,''],
+                ['SVL LOS: '+LOSstr         , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ,''],
+                [AOCS_TMF                   , 'STANDBY: '+CDA_STANDBY_Ssrt              , 'ORBIT S: '+str(nOrbit-1)      , 'ORBIT S: '+str(nOrbit-1)    ,''],
                 [''                         , '                   '+CDA_STANDBY_Esrt    , 'ORBIT E: '+str(nOrbit)        , 'ORBIT E: '+str(nOrbit)      ,''],
                 [''                         , ''                                        , 'SENS S: '+FEP_SEN_STARTsrt    , 'SENS S: '+PGF_SEN_STARTsrt  ,''],
                 [''                         , ''                                        , 'SENS E: '+FEP_SEN_STARTsrt    , 'SENS E: '+PGF_SEN_STOPsrt   ,''],
             ]
         elif (NOAA_BOS != 'N/A'):
             data_iPass = [
-                ['SC: '+SC                  , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ,''],
+                ['S/C: '+SC                 , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ,''],
                 ['Orbit: '+str(nOrbit)      , 'CONF: '+CDA_CONF_Ssrt                    , 'ACQ S: '+FEP_ACQ_STARTsrt     , 'ACQ S: '+PGF_ACQ_STARTsrt   ,''],
                 [ CDAn+' Az: '+str(AOS_Az)  , '            '+CDA_CONF_Esrt              , 'ACQ E: '+FEP_ACQ_STOPsrt      , 'ACQ S: '+PGF_ACQ_STOPsrt    ,''],
-                ['SVL AOSM: '+AOSstr        , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ,''],
-                ['SVL LOSM: '+LOSstr        , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ,''],
+                ['SVL AOS: '+AOSstr         , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ,''],
+                ['SVL LOS: '+LOSstr         , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ,''],
                 [''                         , 'STANDBY: '+CDA_STANDBY_Ssrt              , 'ORBIT S: '+str(nOrbit-1)      , 'ORBIT S: '+str(nOrbit-1)    ,''],
                 [''                         , '                   '+CDA_STANDBY_Esrt    , 'ORBIT E: '+str(nOrbit)        , 'ORBIT E: '+str(nOrbit)      ,''],
                 [''                         , ''                                        , 'SENS S: '+FEP_SEN_STARTsrt    , 'SENS S: '+PGF_SEN_STARTsrt  ,''],
@@ -231,28 +238,28 @@ def DataMag_iPass_SpaGrndCon(PassM0136h,i_Pass,SpaGrndCon):
     elif  (SpaGrndCon==2):
         if (M01==1):
             data_iPass = [
-                ['SC: '+SC               , 'EOA030: '+EOA030str , ''                       , '' ],
+                ['S/C: '+SC              , 'EOA030: '+EOA030str , ''                       , '' ],
                 ['Orbit: '+str(nOrbit)   , 'EOA031: '+EOA031str , 'ADA Start: '+ADA_Midsrt , '' ],
-                ['SVL AOSM: '+AOSstr     , 'TT IASI: '          , 'SSR GAP: '+SSR_TTsrt    , '' ],
-                ['SVL LOSM: '+LOSstr     , ''                   , ''                       , '' ],
-                [ DEF_Pss                , ''                   , ''                       , '' ]
+                ['SVL AOS: '+AOSstr      , 'TT IASI: '          , 'SSR GAP: '+SSR_TTsrt    , '' ],
+                ['SVL LOS:  '+LOSstr     , ''                   , ''                       , '' ],
+                [ AOCS_TMF               , ''                   , ''                       , '' ]
             ]
         elif (M01==2 or M01==3):
             data_iPass = [
-                ['SC: '+SC               , 'EOA030: '+EOA030str , '', '' ],
+                ['S/C: '+SC              , 'EOA030: '+EOA030str , '', '' ],
                 ['Orbit: '+str(nOrbit)   , 'EOA031: '+EOA031str , '', '' ],
-                ['SVL AOSM: '+AOSstr     , 'TT IASI: '          , '', '' ],
-                ['SVL LOSM: '+LOSstr     , ''                   , '', '' ],
-                [ DEF_Pss                , ''                   , '', '' ]
+                ['SVL AOS: '+AOSstr      , 'TT IASI: '          , '', '' ],
+                ['SVL LOS:  '+LOSstr     , ''                   , '', '' ],
+                [ AOCS_TMF               , ''                   , '', '' ]
             ]
     elif  (SpaGrndCon==3):
         if (M01==1 or M01==2 or M01==3):
             data_iPass = [
-                ['SC: '+SC                  , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ],
+                ['S/C: '+SC                 , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ],
                 ['Orbit: '+str(nOrbit)      , 'CONF: '+CDA_CONF_Ssrt                    , 'ACQ S: '+FEP_ACQ_STARTsrt     , 'ACQ S: '+PGF_ACQ_STARTsrt   ],
                 [ CDAn+' Az: '+str(AOS_Az)  , '            '+CDA_CONF_Esrt              , 'ACQ E: '+FEP_ACQ_STOPsrt      , 'ACQ S: '+PGF_ACQ_STOPsrt    ],
-                ['SVL AOSM: '+AOSstr        , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ],
-                ['SVL LOSM: '+LOSstr        , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ],
+                ['SVL AOS: '+AOSstr         , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ],
+                ['SVL LOS: '+LOSstr         , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ],
                 [''                         , 'STANDBY: '+CDA_STANDBY_Ssrt              , 'ORBIT S: '+str(nOrbit-1)      , 'ORBIT S: '+str(nOrbit-1)    ],
                 [''                         , '                   '+CDA_STANDBY_Esrt    , 'ORBIT E: '+str(nOrbit)        , 'ORBIT E: '+str(nOrbit)      ],
                 [''                         , ''                                        , 'SENS S: '+FEP_SEN_STARTsrt    , 'SENS S: '+PGF_SEN_STARTsrt  ],
@@ -260,11 +267,11 @@ def DataMag_iPass_SpaGrndCon(PassM0136h,i_Pass,SpaGrndCon):
             ]
         elif (NOAA_BOS != 'N/A' ):
             data_iPass = [
-                ['SC: '+SC                  , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ],
+                ['S/C: '+SC                 , 'PI Activ: '+CDA_CONF_PIsrt               , 'PI Activ: '                   , 'PI Activ: '                 ],
                 ['Orbit: '+str(nOrbit)      , 'CONF: '+CDA_CONF_Ssrt                    , 'ACQ S: '+FEP_ACQ_STARTsrt     , 'ACQ S: '+PGF_ACQ_STARTsrt   ],
                 [ CDAn+' Az: '+str(AOS_Az)  , '            '+CDA_CONF_Esrt              , 'ACQ E: '+FEP_ACQ_STOPsrt      , 'ACQ S: '+PGF_ACQ_STOPsrt    ],
-                ['SVL AOSM: '+AOSstr        , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ],
-                ['SVL LOSM: '+LOSstr        , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ],
+                ['SVL AOS: '+AOSstr         , 'PASS: '+CDA_PASS_Ssrt                    , 'TT S: '+FEP_TT_STARTsrt       , 'TT S: '+PGF_TT_STARTsrt     ],
+                ['SVL LOS: '+LOSstr         , '            '+CDA_PASS_Esrt              , 'TT E: '+FEP_TT_STOPsrt        , 'TT E: '+PGF_TT_STOPsrt      ],
                 [''                         , 'STANDBY: '+CDA_STANDBY_Ssrt              , 'ORBIT S: '+str(nOrbit-1)      , 'ORBIT S: '+str(nOrbit-1)    ],
                 [''                         , '                   '+CDA_STANDBY_Esrt    , 'ORBIT E: '+str(nOrbit)        , 'ORBIT E: '+str(nOrbit)      ],
                 [''                         , ''                                        , 'SENS S: '+FEP_SEN_STARTsrt    , 'SENS S: '+PGF_SEN_STARTsrt  ],
@@ -296,7 +303,7 @@ def fcn_WimpySpaGrndConpdf(fileName,PassM0136h, SpaGrndCon):
         ]
         colWidths_cm = 4.2
         rowHeights_vet = (0.5*cm,0.375*cm,0.375*cm,0.375*cm,0.375*cm,0.375*cm,0.375*cm,0.375*cm,0.25*cm)
-    elif ():
+    elif (SpaGrndCon==2):
         nrow = 5-1
         data_SpaCon_Int = [
             ['Pass'          , 'ENA0011', 'SSR Anomaly', '' ]
